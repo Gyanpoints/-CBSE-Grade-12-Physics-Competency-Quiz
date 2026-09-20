@@ -1,0 +1,405 @@
+
+
+
+<!-- MathJax Configuration and CDN Script -->
+<script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']]
+        },
+        svg: { fontCache: 'global' }
+    };
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<!-- Interactive Physics Quiz Widget -->
+<div id="physics-quiz-container">
+    <div class="quiz-header">
+        <h2>CBSE Grade 12 Physics Competency Quiz (100 Questions)</h2>
+        <div id="quiz-progress">Question 1 of 100</div>
+    </div>
+
+    <div id="quiz-body">
+        <div id="question-text" class="question-text">Loading question...</div>
+        <div id="options-container" class="options-container"></div>
+    </div>
+
+    <div class="quiz-footer">
+        <button id="prev-btn" onclick="prevQuestion()" disabled>Previous</button>
+        <button id="next-btn" onclick="nextQuestion()">Next</button>
+        <button id="submit-btn" onclick="calculateScore()" style="display: none;">Submit Quiz</button>
+        <button id="restart-btn" onclick="restartQuiz()" style="display: none;">Retake Quiz</button>
+    </div>
+
+    <div id="score-board" class="score-board" style="display: none;"></div>
+</div>
+
+<style>
+    #physics-quiz-container {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        max-width: 850px;
+        margin: 20px auto;
+        padding: 25px;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: 1px solid #e0e0e0;
+    }
+    .quiz-header {
+        border-bottom: 2px solid #2980b9;
+        padding-bottom: 12px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .quiz-header h2 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 1.35rem;
+    }
+    #quiz-progress {
+        font-size: 0.95rem;
+        font-weight: bold;
+        color: #7f8c8d;
+    }
+    .question-text {
+        font-size: 1.08rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 18px;
+        line-height: 1.6;
+    }
+    .options-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .option-btn {
+        background: #f8f9fa;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 0.98rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: #333;
+    }
+    .option-btn:hover {
+        background: #e8f4f8;
+        border-color: #3498db;
+    }
+    .option-btn.selected {
+        background: #d4e6f1;
+        border-color: #2980b9;
+        font-weight: bold;
+    }
+    .quiz-footer {
+        margin-top: 25px;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+    }
+    .quiz-footer button {
+        padding: 10px 20px;
+        font-size: 0.95rem;
+        font-weight: bold;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        background: #2980b9;
+        color: #fff;
+        transition: background 0.2s;
+    }
+    .quiz-footer button:hover:not(:disabled) {
+        background: #1f618d;
+    }
+    .quiz-footer button:disabled {
+        background: #bdc3c7;
+        cursor: not-allowed;
+    }
+    #submit-btn {
+        background: #27ae60 !important;
+    }
+    #submit-btn:hover {
+        background: #1e8449 !important;
+    }
+
+    /* Score & Detailed Review Styles */
+    .score-summary {
+        text-align: center;
+        padding: 20px;
+        font-size: 1.3rem;
+        font-weight: bold;
+        color: #2c3e50;
+        background: #e8f8f5;
+        border-radius: 8px;
+        margin-bottom: 25px;
+        border: 1px solid #a3e4d7;
+    }
+    .review-header-title {
+        color: #2c3e50;
+        border-bottom: 2px solid #2980b9;
+        padding-bottom: 8px;
+        margin-bottom: 20px;
+    }
+    .review-card {
+        background: #fafafa;
+        border-left: 5px solid #bdc3c7;
+        padding: 15px 18px;
+        margin-bottom: 18px;
+        border-radius: 6px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .review-card.review-pass { border-left-color: #2ecc71; }
+    .review-card.review-fail { border-left-color: #e74c3c; }
+    .review-q-title {
+        font-weight: 600;
+        font-size: 1.02rem;
+        color: #2c3e50;
+        margin-bottom: 10px;
+    }
+    .review-ans-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 0.95rem;
+    }
+    .given-answer {
+        padding: 8px 12px;
+        border-radius: 6px;
+    }
+    .given-answer.correct-badge {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    .given-answer.incorrect-badge {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    .correct-answer-text {
+        padding: 8px 12px;
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+        border-radius: 6px;
+    }
+</style>
+
+<script>
+const quizData = [
+    { q: "1. What is the work done in moving a test charge between any two points along a circular equipotential path around a point charge?", options: ["(A) Maximum", "(B) Minimum", "(C) Equal to $\\frac{q_1 q_2}{4\\pi \\epsilon_0 r}$", "(D) Zero"], answer: 3 },
+    { q: "2. A lightning conductor protects buildings because:", options: ["(A) It repels lightning clouds", "(B) Charges are concentrated at sharp metal spikes enabling corona discharge to earth", "(C) It absorbs all electrical energy and converts it to heat", "(D) It acts as an insulator"], answer: 1 },
+    { q: "3. Two small metal blocks $X$ ($+100Q$) and $Y$ ($+50Q$) of mass $m$ are released from rest at equal distances from the edge of a frictionless surface. Which block reaches the edge first?", options: ["(A) Block X", "(B) Block Y", "(C) Both blocks reach the edge at the same time", "(D) Neither block moves"], answer: 2 },
+    { q: "4. If block $Y$ ($+50Q$, mass $m$) is replaced by block $Z$ with charge $+50Q$ and mass $2m$, which block reaches the edge first upon release?", options: ["(A) Block X", "(B) Block Z", "(C) Both at the same time", "(D) Neither block moves"], answer: 0 },
+    { q: "5. Work done by a uniform magnetic field on a charged particle moving along a circular path is zero because:", options: ["(A) Magnetic force is parallel to velocity", "(B) Magnetic force is perpendicular to velocity at every instant", "(C) Magnetic field does not exert any force", "(D) Acceleration is zero"], answer: 1 },
+    { q: "6. A wire of length $L$ carrying current $I$ is bent into an equilateral triangle. Its magnetic dipole moment is:", options: ["(A) Zero", "(B) $I L^2$", "(C) $\\frac{\\sqrt{3}}{4} I L^2$", "(D) $\\frac{\\sqrt{3}}{36} I L^2$"], answer: 3 },
+    { q: "7. In a velocity selector with crossed $\\vec{E}$ and $\\vec{B}$ fields, charged particles pass undeflected when their speed $v$ equals:", options: ["(A) $E \\cdot B$", "(B) $E / B$", "(C) $B / E$", "(D) $\\sqrt{E/B}$"], answer: 1 },
+    { q: "8. A straight wire of length $4\\text{ m}$ carrying current $0.5\\text{ A}$ is formed into a 2-turn square loop or 2-turn circular loop in a magnetic field $0.1\\text{ T}$. Which loop requires less counter torque to hold?", options: ["(A) Circular loop", "(B) Square loop", "(C) Both require equal torque", "(D) Neither requires torque"], answer: 1 },
+    { q: "9. Singly charged ions of mass $m_1 = 0.8 \\times 10^{-26}\\text{ kg}$ accelerated through potential $V$ hit a detector in magnetic field $B_1 = 0.2\\text{ T}$. To hit the same detector, ions of mass $m_2 = 0.2 \\times 10^{-26}\\text{ kg}$ require $B_2$ equal to:", options: ["(A) $0.4\\text{ T}$", "(B) $0.2\\text{ T}$", "(C) $0.1\\text{ T}$", "(D) $0.05\\text{ T}$"], answer: 2 },
+    { q: "10. Two identical circular coils of radius $a$, $n$ turns, carrying current $I$ are oriented at $45^\\circ$ to each other. Resultant magnetic field at center is:", options: ["(A) $\\frac{\\mu_0 n I}{2a}$", "(B) $\\frac{\\mu_0 n I}{2a} \\sqrt{2 + \\sqrt{2}}$", "(C) $\\sqrt{2} \\frac{\\mu_0 n I}{2a}$", "(D) Zero"], answer: 1 },
+    { q: "11. A metal rod $PQ$ moves at constant speed $v$ in a uniform magnetic field $B$. How do induced emf $\\varepsilon$, force $F$, and mechanical power $P$ vary with $v$?", options: ["(A) All linear with $v$", "(B) $\\varepsilon \\propto v$, $F \\propto v$, $P \\propto v^2$", "(C) $\\varepsilon \\propto v^2$, $F \\propto v$, $P \\propto v$", "(D) $\\varepsilon$ constant, $F \\propto v$, $P \\propto v^2$"], answer: 1 },
+    { q: "12. Connecting an inductor in series with a loudspeaker in an audio system has what effect on sound frequencies?", options: ["(A) Blocks low frequencies, passes high frequencies", "(B) Blocks high frequencies, passes low frequencies", "(C) Passes all frequencies equally", "(D) Blocks all frequencies"], answer: 1 },
+    { q: "13. An electron and proton are accelerated through the same potential difference $V$. Given $m_p / m_e = 1837$, the ratio $\\lambda_p / \\lambda_e$ is:", options: ["(A) $1837$", "(B) $\\sqrt{1837}$", "(C) $1 / \\sqrt{1837}$", "(D) $1 / 1837$"], answer: 2 },
+    { q: "14. Blue light causes photoelectric emission from a metal surface. Will infrared radiation cause photoelectric emission from the same surface?", options: ["(A) Yes, with higher kinetic energy", "(B) Yes, with higher current", "(C) No, because IR frequency is lower than threshold frequency", "(D) No, because IR speed is slower"], answer: 2 },
+    { q: "15. The work function $\\Phi_0$ of a photosensitive surface is related to threshold wavelength $\\lambda_0$ by:", options: ["(A) $\\Phi_0 = h c \\lambda_0$", "(B) $\\Phi_0 = \\frac{h c}{\\lambda_0}$", "(C) $\\Phi_0 = \\frac{h}{\\lambda_0 c}$", "(D) $\\Phi_0 = \\frac{\\lambda_0}{h c}$"], answer: 1 },
+    { q: "16. In the Bohr model of hydrogen, what is the ratio of electron velocity in the 3rd excited state ($n=4$) to the $n=3$ state?", options: ["(A) $4/3$", "(B) $3/4$", "(C) $16/9$", "(D) $9/16$"], answer: 1 },
+    { q: "17. The second line of the Balmer series is blue-green. Which electronic transition corresponds to violet radiation in Balmer series?", options: ["(A) $n=3 \\rightarrow n=2$", "(B) $n=4 \\rightarrow n=2$", "(C) $n=5 \\rightarrow n=2$", "(D) $n=6 \\rightarrow n=1$"], answer: 2 },
+    { q: "18. According to Maxwell's theory, an oscillating electric charge:", options: ["(A) Gains energy continuously", "(B) Radiates energy as electromagnetic waves", "(C) Produces only static electric field", "(D) Remains in uniform motion"], answer: 1 },
+    { q: "19. The direction of propagation of an electromagnetic wave is given by the vector direction of:", options: ["(A) $\\vec{E}$", "(B) $\\vec{B}$", "(C) $\\vec{E} \\times \\vec{B}$", "(D) $\\vec{B} \\times \\vec{E}$"], answer: 2 },
+    { q: "20. The momentum $p$ of a photon of frequency $f$ and energy $E$ is:", options: ["(A) $h f c$", "(B) $E / c$", "(C) $E \\cdot c$", "(D) $h c / f$"], answer: 1 },
+    { q: "21. Average electric energy density in a plane electromagnetic wave of electric field amplitude $E_0$ is:", options: ["(A) $\\frac{1}{2} \\epsilon_0 E_0^2$", "(B) $\\frac{1}{4} \\epsilon_0 E_0^2$", "(C) $\\epsilon_0 E_0^2$", "(D) $2 \\epsilon_0 E_0^2$"], answer: 1 },
+    { q: "22. In a meter bridge experiment, null point is obtained at $30\\text{ cm}$. To shift the null point to $50\\text{ cm}$, a resistor must be connected in parallel with $R$ of value:", options: ["(A) $10\\ \\Omega$", "(B) $\\frac{70}{3}\\ \\Omega$", "(C) $15\\ \\Omega$", "(D) $30\\ \\Omega$"], answer: 1 },
+    { q: "23. A deuteron and an $\\alpha$-particle move with the same kinetic energy in identical magnetic fields. The ratio of radii of their circular paths $r_d / r_\\alpha$ is:", options: ["(A) $1$", "(B) $\\sqrt{2}$", "(C) $1/2$", "(D) $2$"], answer: 0 },
+    { q: "24. An insulating rod of length $0.5\\text{ m}$ carrying charge $1\\text{ C}$ at one end rotates in a circle at $\\omega = 10\\pi\\text{ rad/s}$. Magnetic field at center is:", options: ["(A) $2\\pi \\times 10^{-6}\\text{ T}$", "(B) $4\\pi^2 \\times 10^{-6}\\text{ T}$", "(C) $0.4 \\times 10^{-7}\\text{ T}$", "(D) Zero"], answer: 0 },
+    { q: "25. A long vertical wire carries current $I = 200\\text{ A}$ upwards in a uniform horizontal magnetic field $B = 2 \\times 10^{-3}\\text{ T}$ directed North. The null point lies on which side of the wire?", options: ["(A) East", "(B) West", "(C) North", "(D) South"], answer: 1 },
+    { q: "26. Work done to rotate a magnetic dipole of moment $M$ through $60^\\circ$ from stable equilibrium in field $B$ is $0.25\\text{ J}$. The value of $M B$ is:", options: ["(A) $0.25\\text{ J}$", "(B) $0.50\\text{ J}$", "(C) $1.00\\text{ J}$", "(D) $0.125\\text{ J}$"], answer: 1 },
+    { q: "27. A substance with small positive magnetic susceptibility $\\chi_m = +10^{-3}$ is classified as:", options: ["(A) Diamagnetic", "(B) Paramagnetic", "(C) Ferromagnetic", "(D) Non-magnetic"], answer: 1 },
+    { q: "28. Two inductors $L_1$ and $L_2$ have $L_1 = 3 L_2$. If rate of change of current is identical in both, the ratio of induced emf $e_1 / e_2$ is:", options: ["(A) $1/3$", "(B) $1$", "(C) $3$", "(D) $9$"], answer: 2 },
+    { q: "29. An airplane flies North through Earth's magnetic field (downward component). The wingtips develop motional emf with polarities:", options: ["(A) Left wing positive, Right wing negative", "(B) Right wing positive, Left wing negative", "(C) Both wings positive", "(D) No potential difference"], answer: 0 },
+    { q: "30. In an LCR series AC circuit with $R = 100\\ \\Omega$, $X_L = 400\\ \\Omega$, and $X_C = 600\\ \\Omega$, the net impedance $Z$ is:", options: ["(A) $1000\\ \\Omega$", "(B) $200\\ \\Omega$", "(C) $100\\sqrt{5}\\ \\Omega$", "(D) $300\\ \\Omega$"], answer: 2 },
+    { q: "31. As an object moves at constant speed toward a concave mirror from infinity to focus, the real image moves:", options: ["(A) Slower initially and faster later, away from mirror", "(B) Faster initially and slower later", "(C) At constant speed", "(D) Towards the mirror"], answer: 0 },
+    { q: "32. Total internal reflection occurs at an interface when light travels from denser to rarer medium and angle of incidence $i$ is:", options: ["(A) $i < i_c$", "(B) $i = i_c$", "(C) $i > i_c$", "(D) $i = 0^\\circ$"], answer: 2 },
+    { q: "33. In Young's double slit experiment, if the entire apparatus is immersed in a liquid of refractive index $n = 1.2$, the new fringe width $\\beta'$ is:", options: ["(A) $1.2 \\beta$", "(B) $\\beta / 1.2$", "(C) $\\beta$", "(D) $1.44 \\beta$"], answer: 1 },
+    { q: "34. Blue light of wavelength $\\lambda$ through a slit of width $w$ forms a diffraction pattern. Replacing blue with green light ($1.5\\lambda$) requires slit width to be changed to:", options: ["(A) $w / 1.5$", "(B) $1.5 w$", "(C) $w$", "(D) $2.25 w$"], answer: 1 },
+    { q: "35. FM radio ($100\\text{ MHz}$, $\\lambda = 3\\text{ m}$) signal enters a short tunnel while AM radio ($1000\\text{ kHz}$, $\\lambda = 300\\text{ m}$) fades because:", options: ["(A) AM wavelength is comparable to tunnel width", "(B) FM wavelength is comparable to tunnel width and undergoes diffraction", "(C) FM travels faster than AM", "(D) AM has higher energy"], answer: 1 },
+    { q: "36. Energy of a photon with frequency $f$ is given by:", options: ["(A) $E = h / f$", "(B) $E = h f$", "(C) $E = f / h$", "(D) $E = h f^2$"], answer: 1 },
+    { q: "37. Minimum excitation energy required to excite a hydrogen atom from ground state ($n=1$) to first excited state ($n=2$) is:", options: ["(A) $13.6\\text{ eV}$", "(B) $3.4\\text{ eV}$", "(C) $10.2\\text{ eV}$", "(D) $1.51\\text{ eV}$"], answer: 2 },
+    { q: "38. Crowded electric field lines in a region indicate:", options: ["(A) Zero electric field", "(B) Weak electric field", "(C) Strong electric field", "(D) Negative potential"], answer: 2 },
+    { q: "39. Capacitance of a parallel plate capacitor filled with dielectric constant $K$ is:", options: ["(A) $C_0 / K$", "(B) $K C_0$", "(C) $C_0 + K$", "(D) $C_0 - K$"], answer: 1 },
+    { q: "40. Resistance of a $100\\text{ W}$, $220\\text{ V}$ electric bulb is:", options: ["(A) $220\\ \\Omega$", "(B) $484\\ \\Omega$", "(C) $100\\ \\Omega$", "(D) $2.2\\ \\Omega$"], answer: 1 },
+    { q: "41. Kirchhoff's Loop Rule (KVL) is based on the conservation of:", options: ["(A) Charge", "(B) Momentum", "(C) Energy", "(D) Mass"], answer: 2 },
+    { q: "42. Magnetic field inside an ideal long solenoid with $n$ turns per unit length carrying current $I$ is:", options: ["(A) $\\mu_0 n I$", "(B) $\\frac{\\mu_0 n I}{2}$", "(C) $\\mu_0 N I$", "(D) Zero"], answer: 0 },
+    { q: "43. Mutual inductance between two coaxial solenoids is given by:", options: ["(A) $\\frac{\\mu_0 N_1 N_2 A}{l}$", "(B) $\\mu_0 N_1 N_2 A l$", "(C) $\\frac{\\mu_0 N_1 A}{N_2 l}$", "(D) Zero"], answer: 0 },
+    { q: "44. Peak voltage $V_0$ is related to RMS voltage $V_{\\text{rms}}$ in an AC circuit by:", options: ["(A) $V_0 = V_{\\text{rms}} / \\sqrt{2}$", "(B) $V_0 = \\sqrt{2} V_{\\text{rms}}$", "(C) $V_0 = V_{\\text{rms}}$", "(D) $V_0 = 2 V_{\\text{rms}}$"], answer: 1 },
+    { q: "45. Transformer step-up ratio $k > 1$ implies:", options: ["(A) $V_s > V_p$ and $I_s < I_p$", "(B) $V_s < V_p$ and $I_s > I_p$", "(C) $V_s = V_p$", "(D) Frequency increases"], answer: 0 },
+    { q: "46. In forward biasing of a $p-n$ junction diode, the depletion layer width:", options: ["(A) Increases", "(B) Decreases", "(C) Remains unchanged", "(D) Becomes infinite"], answer: 1 },
+    { q: "47. Energy stored in a capacitor $C$ charged to potential $V$ is:", options: ["(A) $C V$", "(B) $\\frac{1}{2} C V^2$", "(C) $\\frac{1}{2} C^2 V$", "(D) $C^2 V^2$"], answer: 1 },
+    { q: "48. RMS value of AC voltage $V = 10 \\sin(100\\pi t)$ is:", options: ["(A) $10\\text{ V}$", "(B) $5\\sqrt{2}\\text{ V}$", "(C) $10\\sqrt{2}\\text{ V}$", "(D) $20\\text{ V}$"], answer: 1 },
+    { q: "49. Frequency of AC voltage $V = V_0 \\sin(100\\pi t)$ is:", options: ["(A) $100\\text{ Hz}$", "(B) $50\\text{ Hz}$", "(C) $25\\text{ Hz}$", "(D) $314\\text{ Hz}$"], answer: 1 },
+    { q: "50. Photoelectric current increases linearly with increase in:", options: ["(A) Frequency of incident light", "(B) Intensity of incident light", "(C) Work function", "(D) Stopping potential"], answer: 1 },
+    { q: "51. Electric potential at any point on the equatorial line of an electric dipole is:", options: ["(A) Maximum", "(B) Minimum", "(C) Zero", "(D) Infinite"], answer: 3 },
+    { q: "52. Total electric flux through a closed surface enclosing charge $q$ in vacuum is:", options: ["(A) $q \\epsilon_0$", "(B) $q / \\epsilon_0$", "(C) $\\epsilon_0 / q$", "(D) Zero"], answer: 1 },
+    { q: "53. Torque on an electric dipole $\\vec{p}$ placed in a uniform electric field $\\vec{E}$ is:", options: ["(A) $\\vec{p} \\cdot \\vec{E}$", "(B) $\\vec{p} \\times \\vec{E}$", "(C) $p E \\cos\\theta$", "(D) Zero"], answer: 1 },
+    { q: "54. Potential energy of an electric dipole $\\vec{p}$ in uniform field $\\vec{E}$ at angle $\\theta$ is:", options: ["(A) $-p E \\cos\\theta$", "(B) $p E \\sin\\theta$", "(C) $p E \\tan\\theta$", "(D) Zero"], answer: 0 },
+    { q: "55. Relation between drift velocity $v_d$ and electric field $E$ in a conductor is:", options: ["(A) $v_d \\propto E$", "(B) $v_d \\propto 1/E$", "(C) $v_d \\propto E^2$", "(D) Independent of $E$"], answer: 0 },
+    { q: "56. Ohm's Law in vector form is written as:", options: ["(A) $V = I R$", "(B) $\\vec{J} = \\sigma \\vec{E}$", "(C) $\\vec{E} = \\rho \\vec{J}^2$", "(D) $I = n e A v_d$"], answer: 1 },
+    { q: "57. Temperature coefficient of resistance $\\alpha$ is positive for:", options: ["(A) Metallic conductors", "(B) Semiconductors", "(C) Insulators", "(D) Electrolytes"], answer: 0 },
+    { q: "58. Balanced Wheatstone bridge condition with four arms $R_1, R_2, R_3, R_4$ is:", options: ["(A) $R_1 R_3 = R_2 R_4$", "(B) $R_1 / R_2 = R_3 / R_4$", "(C) $R_1 + R_2 = R_3 + R_4$", "(D) $R_1 - R_2 = R_3 - R_4$"], answer: 1 },
+    { q: "59. Magnetic force per unit length between two parallel conductors separated by distance $r$ carrying currents $I_1$ and $I_2$ is:", options: ["(A) $\\frac{\\mu_0 I_1 I_2}{2\\pi r}$", "(B) $\\frac{\\mu_0 I_1 I_2}{4\\pi r^2}$", "(C) $\\frac{\\mu_0 I_1}{2\\pi r I_2}$", "(D) Zero"], answer: 0 },
+    { q: "60. Cyclotron frequency of a charged particle of charge $q$ and mass $m$ in field $B$ is:", options: ["(A) $\\frac{q B}{2\\pi m}$", "(B) $\\frac{2\\pi m}{q B}$", "(C) $\\frac{q m}{2\\pi B}$", "(D) $\\frac{q B m}{2\\pi}$"], answer: 0 },
+    { q: "61. Magnetic susceptibility $\\chi_m$ of diamagnetic materials is:", options: ["(A) Small and positive", "(B) Small and negative", "(C) Large and positive", "(D) Zero"], answer: 1 },
+    { q: "62. Curie's Law states that magnetic susceptibility of a paramagnetic material varies as:", options: ["(A) $\\chi_m \\propto T$", "(B) $\\chi_m \\propto 1/T$", "(C) $\\chi_m \\propto T^2$", "(D) Independent of $T$"], answer: 1 },
+    { q: "63. Induced emf $\\varepsilon$ in a circuit according to Faraday's law is:", options: ["(A) $\\varepsilon = -\\frac{d\\Phi_B}{dt}$", "(B) $\\varepsilon = -\\Phi_B t$", "(C) $\\varepsilon = \\frac{d^2\\Phi_B}{dt^2}$", "(D) $\\varepsilon = Zero$"], answer: 0 },
+    { q: "64. Lenz's law is a direct consequence of the law of conservation of:", options: ["(A) Charge", "(B) Momentum", "(C) Energy", "(D) Mass"], answer: 2 },
+    { q: "65. Motional emf across a rod of length $l$ rotating with angular frequency $\\omega$ in field $B$ about one end is:", options: ["(A) $B \\omega l^2$", "(B) $\\frac{1}{2} B \\omega l^2$", "(C) \\frac{1}{2} B \\omega^2 l", "(D) 2 B \\omega l^2"], answer: 1 },
+    { q: "66. Inductive reactance $X_L$ of an inductor $L$ at frequency $f$ is:", options: ["(A) $2\\pi f L$", "(B) $\\frac{1}{2\\pi f L}$", "(C) $2\\pi f / L$", "(D) $L / 2\\pi f$"], answer: 0 },
+    { q: "67. Capacitive reactance $X_C$ of a capacitor $C$ at frequency $f$ is:", options: ["(A) $2\\pi f C$", "(B) $\\frac{1}{2\\pi f C}$", "(C) $2\\pi f / C$", "(D) $C / 2\\pi f$"], answer: 1 },
+    { q: "68. Resonant frequency $f_0$ of a series LCR AC circuit is:", options: ["(A) $\\frac{1}{2\\pi \\sqrt{LC}}$", "(B) $2\\pi \\sqrt{LC}$", "(C) $\\frac{\\sqrt{LC}}{2\\pi}$", "(D) $\\frac{1}{LC}$"], answer: 0 },
+    { q: "69. Quality factor $Q$ of a series LCR resonant circuit is:", options: ["(A) $\\frac{\\omega_0 L}{R}$", "(B) $\\frac{R}{\\omega_0 L}$", "(C) $\\frac{\\omega_0 R}{L}$", "(D) $\\omega_0 L R$"], answer: 0 },
+    { q: "70. Power factor $\\cos\\phi$ in a purely resistive AC circuit is:", options: ["(A) $0$", "(B) $1$", "(C) $0.5$", "(D) $-1$"], answer: 1 },
+    { q: "71. Speed of light $c$ in free space in terms of permittivity $\\epsilon_0$ and permeability $\\mu_0$ is:", options: ["(A) $\\sqrt{\\mu_0 \\epsilon_0}$", "(B) $\\frac{1}{\\sqrt{\\mu_0 \\epsilon_0}}$", "(C) \\mu_0 \\epsilon_0", "(D) $\\frac{1}{\\mu_0 \\epsilon_0}$"], answer: 1 },
+    { q: "72. Ratio of electric field amplitude $E_0$ to magnetic field amplitude $B_0$ in an EM wave equals:", options: ["(A) $c$", "(B) $1/c$", "(C) $c^2$", "(D) $1/c^2$"], answer: 0 },
+    { q: "73. Which component of the electromagnetic spectrum has the highest frequency?", options: ["(A) Radio waves", "(B) Ultraviolet rays", "(C) X-rays", "(D) Gamma rays"], answer: 3 },
+    { q: "74. When a convex lens is immersed in water ($\text{refractive index } 1.33$), its focal length:", options: ["(A) Decreases", "(B) Increases", "(C) Remains same", "(D) Becomes negative"], answer: 1 },
+    { q: "75. Power $P$ of a combination of two thin lenses of powers $P_1$ and $P_2$ in contact is:", options: ["(A) $P_1 P_2$", "(B) $P_1 + P_2$", "(C) $P_1 - P_2$", "(D) $P_1 / P_2$"], answer: 1 },
+    { q: "76. Critical angle $i_c$ for a medium of refractive index $n$ relative to air is:", options: ["(A) $\\sin i_c = n$", "(B) $\\sin i_c = 1/n$", "(C) $\\cos i_c = 1/n$", "(D) $\\tan i_c = n$"], answer: 1 },
+    { q: "77. According to Rayleigh's law, intensity of scattered light $I$ depends on wavelength $\\lambda$ as:", options: ["(A) $I \\propto \\lambda^2$", "(B) $I \\propto 1/\\lambda^2$", "(C) $I \\propto 1/\\lambda^4$", "(D) $I \\propto \\lambda^4$"], answer: 2 },
+    { q: "78. Magnifying power of a compound microscope increases with:", options: ["(A) Increasing focal length of objective", "(B) Decreasing focal length of objective and eyepiece", "(C) Increasing wavelength", "(D) Decreasing tube length"], answer: 1 },
+    { q: "79. Resolving power of an astronomical telescope increases with:", options: ["(A) Increasing aperture diameter $D$ of objective", "(B) Decreasing aperture diameter $D$", "(C) Increasing focal length of eyepiece", "(D) Increasing wavelength"], answer: 0 },
+    { q: "80. Relation between phase difference $\\Delta \\phi$ and path difference $\\Delta x$ for wave of wavelength $\\lambda$ is:", options: ["(A) $\\Delta \\phi = \\frac{2\\pi}{\\lambda} \\Delta x$", "(B) $\\Delta \\phi = \\frac{\\lambda}{2\\pi} \\Delta x$", "(C) $\\Delta \\phi = 2\\pi \\lambda \\Delta x$", "(D) $\\Delta \\phi = \\Delta x$"], answer: 0 },
+    { q: "81. De Broglie wavelength of an electron accelerated through potential $V$ volts is approx:", options: ["(A) $\\frac{12.27}{\\sqrt{V}}\\text{ \\AA}$", "(B) $12.27 \\sqrt{V}\\text{ \\AA}$", "(C) $\\frac{1.227}{V}\\text{ \\AA}$", "(D) $122.7 / V\\text{ \\AA}$"], answer: 0 },
+    { q: "82. Stopping potential in photoelectric effect depends on:", options: ["(A) Intensity of incident light only", "(B) Frequency of incident light and nature of metal", "(C) Distance from source", "(D) Surface area of metal"], answer: 1 },
+    { q: "83. Bohr's quantization condition for angular momentum $L$ of electron in $n$-th orbit is:", options: ["(A) $L = n h$", "(B) $L = \\frac{n h}{2\\pi}$", "(C) $L = \\frac{2\\pi}{n h}$", "(D) $L = n^2 h$"], answer: 1 },
+    { q: "84. Radius $r_n$ of $n$-th Bohr orbit in hydrogen atom is proportional to:", options: ["(A) $n$", "(B) $n^2$", "(C) $1/n$", "(D) $1/n^2$"], answer: 1 },
+    { q: "85. Total energy $E_n$ of electron in $n$-th Bohr orbit of hydrogen is proportional to:", options: ["(A) $n$", "(B) $1/n$", "(C) $-1/n^2$", "(D) $n^2$"], answer: 2 },
+    { q: "86. Rydberg formula for wave number $1/\\lambda$ of emitted hydrogen spectral lines is:", options: ["(A) $R \\left(\\frac{1}{n_1^2} - \\frac{1}{n_2^2}\\right)$", "(B) $R (n_1^2 - n_2^2)$", "(C) $\\frac{R}{n_1 - n_2}$", "(D) $R (n_1 + n_2)$"], answer: 0 },
+    { q: "87. Mass defect $\\Delta m$ of a nucleus with $Z$ protons and $N$ neutrons of mass $M$ is:", options: ["(A) $Z m_p + N m_n - M$", "(B) $M - Z m_p - N m_n$", "(C) $Z m_p - N m_n$", "(D) $M / (Z + N)$"], answer: 0 },
+    { q: "88. Binding energy per nucleon curve shows a maximum value of approx $8.75\\text{ MeV}$ for:", options: ["(A) Hydrogen ($^1\\text{H}$)", "(B) Helium ($^4\\text{He}$)", "(C) Iron ($^{56}\\text{Fe}$)", "(D) Uranium ($^{238}\\text{U}$)"], answer: 2 },
+    { q: "89. Nuclear density of a nucleus of mass number $A$ varies as:", options: ["(A) $A$", "(B) $A^{1/3}$", "(C) $A^0$ (independent of $A$)", "(D) $A^{-1}$"], answer: 2 },
+    { q: "90. Half-life $T_{1/2}$ is related to decay constant $\\lambda$ by:", options: ["(A) $T_{1/2} = \\frac{0.693}{\\lambda}$", "(B) $T_{1/2} = 0.693 \\lambda$", "(C) $T_{1/2} = \\frac{1}{\\lambda}$", "(D) $T_{1/2} = \\lambda^2$"], answer: 0 },
+    { q: "91. At absolute zero temperature ($0\\text{ K}$), an intrinsic semiconductor acts as a/an:", options: ["(A) Superconductor", "(B) Perfect conductor", "(C) Insulator", "(D) Semiconductor"], answer: 2 },
+    { q: "92. Doping pure Silicon with trivalent impurity (like Boron or Indium) produces:", options: ["(A) $n$-type semiconductor", "(B) $p$-type semiconductor", "(C) Intrinsic semiconductor", "(D) Insulator"], answer: 1 },
+    { q: "93. In an $n$-type semiconductor, the majority charge carriers are:", options: ["(A) Holes", "(B) Electrons", "(C) Positive ions", "(D) Protons"], answer: 1 },
+    { q: "94. Zener diode is specially designed to operate under:", options: ["(A) Forward bias", "(B) Reverse breakdown region", "(C) Zero bias", "(D) Unbiased AC region"], answer: 1 },
+    { q: "95. Output frequency of a full-wave rectifier working on $50\\text{ Hz}$ input supply is:", options: ["(A) $50\\text{ Hz}$", "(B) $25\\text{ Hz}$", "(C) $100\\text{ Hz}$", "(D) $200\\text{ Hz}$"], answer: 2 },
+    { q: "96. Solar cell is a $p-n$ junction diode that operates under:", options: ["(A) Strong forward bias", "(B) Reverse breakdown", "(C) No external bias", "(D) High AC frequency"], answer: 2 },
+    { q: "97. Threshold frequency $\\nu_0$ in photoelectric effect is defined as the minimum frequency:", options: ["(A) Below which no photoelectrons are emitted regardless of intensity", "(B) Above which photoelectrons stop emitting", "(C) At which kinetic energy is maximum", "(D) Independent of metal material"], answer: 0 },
+    { q: "98. Displacement current $I_d$ in terms of electric flux $\\Phi_E$ is defined by Maxwell as:", options: ["(A) $I_d = \\epsilon_0 \\frac{d\\Phi_E}{dt}$", "(B) $I_d = \\frac{1}{\\epsilon_0} \\frac{d\\Phi_E}{dt}$", "(C) $I_d = \\mu_0 \\frac{d\\Phi_E}{dt}$", "(D) Zero"], answer: 0 },
+    { q: "99. Self-inductance $L$ of a long solenoid of $N$ turns, length $l$, area $A$ is:", options: ["(A) $\\frac{\\mu_0 N^2 A}{l}$", "(B) $\\frac{\\mu_0 N A}{l}$", "(C) $\\mu_0 N^2 A l$", "(D) Zero"], answer: 0 },
+    { q: "100. Iron core of a transformer is laminated to minimize energy loss due to:", options: ["(A) Flux leakage", "(B) Resistance of windings", "(C) Hysteresis", "(D) Eddy currents"], answer: 3 }
+];
+
+let currentQ = 0;
+let userAnswers = new Array(quizData.length).fill(null);
+
+function loadQuestion() {
+    const item = quizData[currentQ];
+    document.getElementById("quiz-progress").innerText = `Question ${currentQ + 1} of ${quizData.length}`;
+    document.getElementById("question-text").innerHTML = item.q;
+    
+    const container = document.getElementById("options-container");
+    container.innerHTML = "";
+    
+    item.options.forEach((opt, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "option-btn";
+        if (userAnswers[currentQ] === idx) btn.classList.add("selected");
+        btn.innerHTML = opt;
+        btn.onclick = () => selectOption(idx);
+        container.appendChild(btn);
+    });
+
+    document.getElementById("prev-btn").disabled = currentQ === 0;
+    if (currentQ === quizData.length - 1) {
+        document.getElementById("next-btn").style.display = "none";
+        document.getElementById("submit-btn").style.display = "inline-block";
+    } else {
+        document.getElementById("next-btn").style.display = "inline-block";
+        document.getElementById("submit-btn").style.display = "none";
+    }
+
+    if (window.MathJax && MathJax.typesetPromise) {
+        MathJax.typesetPromise([document.getElementById("physics-quiz-container")]);
+    }
+}
+
+function selectOption(idx) {
+    userAnswers[currentQ] = idx;
+    loadQuestion();
+}
+
+function nextQuestion() {
+    if (currentQ < quizData.length - 1) {
+        currentQ++;
+        loadQuestion();
+    }
+}
+
+function prevQuestion() {
+    if (currentQ > 0) {
+        currentQ--;
+        loadQuestion();
+    }
+}
+
+function calculateScore() {
+    let score = 0;
+    let reviewHtml = "<h3 class='review-header-title'>Detailed Question Review</h3>";
+
+    quizData.forEach((item, idx) => {
+        const userChoiceIdx = userAnswers[idx];
+        const isCorrect = userChoiceIdx === item.answer;
+        if (isCorrect) score++;
+
+        const userChoiceText = userChoiceIdx !== null ? item.options[userChoiceIdx] : "<em>Not Attempted</em>";
+        const correctChoiceText = item.options[item.answer];
+
+        reviewHtml += `
+            <div class="review-card ${isCorrect ? 'review-pass' : 'review-fail'}">
+                <div class="review-q-title">${item.q}</div>
+                <div class="review-ans-group">
+                    <div class="given-answer ${isCorrect ? 'correct-badge' : 'incorrect-badge'}">
+                        <strong>Your Answer:</strong> ${userChoiceText} ${isCorrect ? '✓' : '✗'}
+                    </div>
+                    ${!isCorrect ? `<div class="correct-answer-text"><strong>Correct Answer:</strong> ${correctChoiceText}</div>` : ''}
+                </div>
+            </div>
+        `;
+    });
+
+    document.getElementById("quiz-body").style.display = "none";
+    document.getElementById("prev-btn").style.display = "none";
+    document.getElementById("submit-btn").style.display = "none";
+    document.getElementById("restart-btn").style.display = "inline-block";
+
+    const scoreBoard = document.getElementById("score-board");
+    scoreBoard.style.display = "block";
+    scoreBoard.innerHTML = `
+        <div class="score-summary">
+            🎉 Quiz Completed!<br>Your Score: <strong>${score} / ${quizData.length}</strong> (${((score/quizData.length)*100).toFixed(1)}%)
+        </div>
+        ${reviewHtml}
+    `;
+
+    if (window.MathJax && MathJax.typesetPromise) {
+        MathJax.typesetPromise([scoreBoard]);
+    }
+}
+
+function restartQuiz() {
+    currentQ = 0;
+    userAnswers.fill(null);
+    document.getElementById("quiz-body").style.display = "block";
+    document.getElementById("score-board").style.display = "none";
+    document.getElementById("restart-btn").style.display = "none";
+    loadQuestion();
+}
+
+loadQuestion();
+</script>
